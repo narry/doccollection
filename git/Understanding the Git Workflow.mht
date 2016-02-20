@@ -1,0 +1,1601 @@
+From: =?gb2312?B?0tHTySBJbnRlcm5ldCBFeHBsb3JlciAxMSCxo7Tm?=
+Subject: Understanding the Git?Workflow
+Date: Sat, 20 Feb 2016 08:10:05 +0800
+MIME-Version: 1.0
+Content-Type: multipart/related;
+	type="text/html";
+	boundary="----=_NextPart_000_0050_01D16BB6.1B3A98E0"
+X-MimeOLE: Produced By Microsoft MimeOLE V6.1.7601.17609
+
+这是 MIME 格式的多方邮件。
+
+------=_NextPart_000_0050_01D16BB6.1B3A98E0
+Content-Type: text/html;
+	charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+Content-Location: https://sandofsky.com/blog/git-workflow.html
+
+=EF=BB=BF<!DOCTYPE HTML>
+<!DOCTYPE html PUBLIC "" ""><HTML xml:lang=3D"en" =
+xmlns=3D"http://www.w3.org/1999/xhtml"><HEAD><META=20
+content=3D"IE=3D11.0000" http-equiv=3D"X-UA-Compatible">
+    =20
+<META charset=3D"utf-8">	=20
+<META name=3D"viewport" content=3D"width=3Ddevice-width, =
+initial-scale=3D1.0, user-scalable=3Dno">=20
+    <LINK href=3D"http://www.myopenid.com/server" rel=3D"openid.server"> =
+    <LINK=20
+href=3D"http://sandofsky.myopenid.com/" rel=3D"openid.delegate">	 <LINK =
+href=3D"https://sandofsky.com/css/normalize.css"=20
+rel=3D"stylesheet" type=3D"text/css" media=3D"screen,print">     <LINK =
+href=3D"https://sandofsky.com/css/main.css"=20
+rel=3D"stylesheet" type=3D"text/css" media=3D"screen,print">     <LINK =
+href=3D"https://sandofsky.com/css/code.css"=20
+rel=3D"stylesheet" type=3D"text/css" media=3D"screen,print">     <LINK =
+title=3D"RSS Feed"=20
+href=3D"http://feeds2.feedburner.com/SandofskyBlogEntries" =
+rel=3D"alternate" type=3D"application/atom+xml">
+	 <LINK href=3D"https://sandofsky.com/blog/git-workflow.html" =
+rel=3D"canonical">    =20
+<META http-equiv=3D"X-UA-Compatible" content=3D"chrome=3D1">     =
+<TITLE>Understanding=20
+the Git&nbsp;Workflow</TITLE>    =20
+<META name=3D"description" content=3D"Benjamin Sandofsky, a Software =
+Engineer in San Francisco, California.">=20
+   =20
+<META name=3D"keywords" content=3D"ben sandofsky,benjamin =
+sandofsky,twitter,twitter developer,systems programming,scaling,software =
+engineering,iphone development,rails,ruby on rails,ruby on rails =
+development,objective-c,short films,films,filmaking,comedy,voice =
+mail,shoes,tequila,improv,improv =
+comedy,writer,writing,actor,improviser">=20
+   =20
+<META content=3D"699463" property=3D"twitter:account_id">  =20
+<META name=3D"GENERATOR" content=3D"MSHTML 11.00.9600.18205"></HEAD>  =20
+<BODY><NAV><A class=3D"site-title" href=3D"https://sandofsky.com/"><SPAN =
+class=3D"section"><SPAN=20
+class=3D"semi-collapseable">Ben<SPAN class=3D"collapseable">jamin</SPAN> =
+
+</SPAN>Sandofsky</SPAN></A><A class=3D"blog" =
+href=3D"https://sandofsky.com/writing.html"><SPAN=20
+class=3D"section">Writing</SPAN></A><A class=3D"projects" =
+href=3D"https://sandofsky.com/projects.html"><SPAN=20
+class=3D"section">Projects</SPAN></A><A class=3D"projects" =
+href=3D"https://twitter.com/sandofsky"><SPAN=20
+class=3D"section last">Twitter</SPAN></A>	 </NAV>	=20
+<DIV class=3D"longform blog">
+<DIV itemtype=3D"http://schema.org/Article" itemscope=3D"">
+<H1 itemprop=3D"name">Understanding the Git&nbsp;Workflow</H1>
+<DIV class=3D"article-body content" itemprop=3D"articleBody">
+<P>If you don=E2=80=99t understand the motivation behind Git=E2=80=99s =
+design, you=E2=80=99re in for a=20
+world of hurt. With enough flags you can force Git to act the way you =
+think it=20
+should instead of the way it wants to. But that=E2=80=99s like using a =
+screwdriver like=20
+a hammer; it gets the job done, but it=E2=80=99s done poorly, takes =
+longer, and damages=20
+the screwdriver.</P>
+<P>Consider how a common Git workflow falls apart.</P>
+<OL>
+  <LI><EM>Create a branch off Master</EM></LI>
+  <LI><EM>Work</EM></LI>
+  <LI><EM>Merge it back to Master when done</EM></LI></OL>
+<P>Most of the time this behaves as you expect because Master changed =
+since you=20
+branched. Then one day you merge a feature branch into Master, but =
+Master hasn=E2=80=99t=20
+diverged. Instead of creating a merge commit, Git points Master to the =
+latest=20
+commit on the feature branch, or =E2=80=9Cfast forwards.=E2=80=9D (<A =
+href=3D"https://sandofsky.com/images/fast_forward.pdf">Diagram</A>)</P>
+<P>Unfortunately, your feature branch contained checkpoint commits, =
+frequent=20
+commits that back up your work but captures the code in an unstable =
+state. Now=20
+these commits are indistinguishable from Master=E2=80=99s stable =
+commits. You could=20
+easily roll back into a disaster.</P>
+<P>So you add a new rule: =E2=80=9CWhen you merge in your feature =
+branch, use=20
+<EM>=E2=80=93no-ff</EM> to force a new commit.=E2=80=9D This gets the =
+job done, and you move=20
+on.</P>
+<P>Then one day you discover a critical bug in production, and you need =
+to track=20
+down when it was introduced. You run <A =
+href=3D"http://book.git-scm.com/5_finding_issues_-_git_bisect.html">bisec=
+t</A>=20
+but keep landing on checkpoint commits. You give up and investigate by =
+hand.</P>
+<P>You narrow the bug to a single file. You run <CODE>blame</CODE> to =
+see how it=20
+changed in the last 48 hours. You know it=E2=80=99s impossible, but =
+<CODE>blame</CODE>=20
+reports the file hasn=E2=80=99t been touched in weeks. It turns out =
+<CODE>blame</CODE>=20
+reports changes for the time of the initial commit, not when merged. =
+Your first=20
+checkpoint commit modified this file weeks ago, but the change was =
+merged in=20
+today.</P>
+<P>The <CODE>no-ff</CODE> band-aid, broken <CODE>bisect</CODE>, and=20
+<CODE>blame</CODE> mysteries are all symptoms that you=E2=80=99re using =
+a screwdriver as=20
+a hammer.</P>
+<H3 id=3D"rethinking-revision-control">Rethinking Revision Control</H3>
+<P>Revision control exists for two reasons.</P>
+<P>The first is to help the act of writing code. You need to sync =
+changes with=20
+teammates, and regularly  back up your work. Emailing zip files =
+doesn=E2=80=99t=20
+scale.</P>
+<P>The second reason is <A =
+href=3D"http://en.wikipedia.org/wiki/Software_configuration_management">c=
+onfiguration=20
+management</A>. This includes managing parallel lines of development, =
+such as=20
+working on the next major version while applying the occasional bug fix =
+to the=20
+existing version in production. Configuration management is also used to =
+figure=20
+out when exactly something changed, an invaluable tool in diagnosing =
+bugs.</P>
+<P>Traditionally, these two reasons conflict.</P>
+<P>When prototyping a feature, you should make regular checkpoint =
+commits.=20
+However, these commits usually break the build.</P>
+<P>In a perfect world, every change in your revision history is succinct =
+and=20
+stable. There are no checkpoint commits that create line noise. There =
+are no=20
+giant, 10,000 line commits. A clean history makes it easy to revert =
+changes or=20
+<A =
+href=3D"http://gitready.com/intermediate/2009/03/04/pick-out-individual-c=
+ommits.html">cherry-pick</A>=20
+them between branches. A clean history is easy to later inspect and =
+analyze.=20
+However, maintaining a clean history would mean waiting to check in =
+changes=20
+until they=E2=80=99re perfect.</P>
+<P>So which approach do you choose? Regular commits, or a clean =
+history?</P>
+<P>If you=E2=80=99re hacking on a two man pre-launch startup, clean =
+history buys you=20
+little. You can get away with committing everything to Master, and =
+deploying=20
+whenever you feel like it.</P>
+<P>As the consequences of change increase, be it a growing development =
+team or=20
+the size of your user base, you need tools and techniques to keep things =
+in=20
+check. This includes automated tests, code review, and a clean =
+history.</P>
+<P>Feature branches seem like a happy middle ground. They solve the =
+basic=20
+problems of parallel development. You=E2=80=99re thinking of integration =
+at the least=20
+important time, when you=E2=80=99re writing the code, but it will get =
+you by for some=20
+time.</P>
+<P>When your project scales large enough, the simple branch/commit/merge =
+
+workflow falls apart. The time for duct-tape is over. You need a clean =
+revision=20
+history.</P>
+<P>Git is revolutionary because it gives you the best of both worlds. =
+You can=20
+regularly check in changes while prototyping a solution but deliver a =
+clean=20
+history when you=E2=80=99re finished. When this is your goal, =
+Git=E2=80=99s defaults make a lot=20
+more sense.</P>
+<H2 id=3D"the-workflow">The Workflow</H2>
+<P>Think of branches in two categories: public and private.</P>
+<P>Public branches are the authoritative history of the project. In a =
+public=20
+branch, every commit should be succinct, atomic, and have a well =
+documented=20
+commit message. It should be as linear as possible. It should be =
+immutable.=20
+Public branches include Master and release branches.</P>
+<P>A private branch is for yourself. It=E2=80=99s your scratch paper =
+while working out a=20
+problem.</P>
+<P>It=E2=80=99s safest to keep private branches local. If you do need to =
+push one, maybe=20
+to synchronize your work and home computers, tell your teammates that =
+the branch=20
+you pushed is private so they don=E2=80=99t base work off of it.</P>
+<P>You should never merge a private branch directly into a public branch =
+with a=20
+vanilla <EM>merge</EM>. First, clean up your branch with tools like =
+reset,=20
+rebase, squash merges, and commit amending.</P>
+<P>Treat yourself as a writer and approach each commit as a chapter in a =
+book.=20
+Writers don=E2=80=99t publish first drafts. Michael Crichton said, =
+=E2=80=9CGreat books aren=E2=80=99t=20
+written=E2=80=93 they=E2=80=99re rewritten.=E2=80=9D</P>
+<P>If you come from other systems, modifying history feels taboo. =
+You=E2=80=99re=20
+conditioned that anything committed is written in stone. By that logic =
+we should=20
+disable =E2=80=9Cundo=E2=80=9D in our text editors.</P>
+<P>Pragmatists care about changes until the changes become noise. For=20
+configuration management, we care about big-picture changes. Checkpoint =
+commits=20
+are just a cloud-backed undo buffer.</P>
+<P>If you treat your public history as pristine, fast-forward merges are =
+not=20
+only safe but preferable. They keep revision history linear and easier =
+to=20
+follow.</P>
+<P>The only remaining argument for <EM>=E2=80=93no-ff</EM> is =
+=E2=80=9Cdocumentation.=E2=80=9D People=20
+may use merge commits to represent the last deployed version of =
+production code.=20
+That=E2=80=99s an antipattern. Use tags.</P>
+<H2 id=3D"guidelines-and-examples">Guidelines and Examples</H2>
+<P>I use three basic approaches depending on the size of my change, how =
+long=20
+I=E2=80=99ve been working on it, and how far the branch has =
+diverged.</P>
+<H3 id=3D"short-lived-work">Short lived work</H3>
+<P>The vast majority of the time, my cleanup is just a squash merge.</P>
+<P>Imagine I create a feature branch and create a series of checkpoint =
+commits=20
+over the next hour:</P><FIGURE class=3D"highlight">
+<PRE><CODE class=3D"language-bash" data-lang=3D"bash">git checkout -b =
+private_feature_branch=0A=
+touch file1.txt=0A=
+git add file1.txt=0A=
+git commit -am <SPAN class=3D"s2">"WIP"</SPAN></CODE></PRE></FIGURE>
+<P>When I=E2=80=99m done, instead of a vanilla <EM>git merge</EM>, =
+I=E2=80=99ll run:</P><FIGURE=20
+class=3D"highlight">
+<PRE><CODE class=3D"language-bash" data-lang=3D"bash">git checkout master=0A=
+git merge --squash private_feature_branch=0A=
+git commit -v</CODE></PRE></FIGURE>
+<P>Then I spend a minute writing a detailed commit message.</P>
+<H3 id=3D"larger-work">Larger work</H3>
+<P>Sometimes a feature sprawls into a multi-day project, with dozens of =
+small=20
+commits.</P>
+<P>I decide my change should be broken into smaller changes, so squash =
+is too=20
+blunt an instrument. (As a rule of thumb I ask, =E2=80=9CWould this be =
+easy to code=20
+review?=E2=80=9D)</P>
+<P>If my checkpoint commits followed a logical progression, I can use <A =
+href=3D"http://kernel.org/pub/software/scm/git/docs/git-rebase.html">reba=
+se</A>=E2=80=99s=20
+Interactive  Mode.</P>
+<P>Interactive mode is powerful. You can use it to edit an old commits, =
+split=20
+them up, reorder them, and in this case squash a few.</P>
+<P>On my feature branch:</P><FIGURE class=3D"highlight">
+<PRE><CODE class=3D"language-bash" data-lang=3D"bash">git rebase =
+--interactive master</CODE></PRE></FIGURE>
+<P>It then opens an editor with a list of commits. On each line is the =
+operation=20
+to perform, the SHA1 of the commmit, and the current commit message. A =
+legend is=20
+provided with a list of possible commands.</P>
+<P>By default, each commit uses =E2=80=9Cpick,=E2=80=9D which =
+doesn=E2=80=99t modify the=20
+commit.</P><FIGURE class=3D"highlight">
+<PRE><CODE class=3D"language-bash" data-lang=3D"bash">pick ccd6e62 Work =
+on back button=0A=
+pick 1c83feb Bug fixes=0A=
+pick f9d0c33 Start work on toolbar</CODE></PRE></FIGURE>
+<P>I change the operation to =E2=80=9Csquash,=E2=80=9D which squashes =
+the second commit into the=20
+first.</P><FIGURE class=3D"highlight">
+<PRE><CODE class=3D"language-bash" data-lang=3D"bash">pick ccd6e62 Work =
+on back button=0A=
+squash 1c83feb Bug fixes=0A=
+pick f9d0c33 Start work on toolbar</CODE></PRE></FIGURE>
+<P>When I save and close, a new editor prompts me for the commit message =
+of the=20
+combined commit, and then I=E2=80=99m done.</P>
+<H3 id=3D"declaring-branch-bankruptcy">Declaring Branch Bankruptcy</H3>
+<P>Maybe my feature branch existed for a very long time, and I had to =
+merge=20
+several branches into my feature branch to keep it up to date while I =
+work.=20
+History is convoluted. It=E2=80=99s easiest to grab the raw diff create =
+a clean=20
+branch.</P><FIGURE class=3D"highlight">
+<PRE><CODE class=3D"language-bash" data-lang=3D"bash">git checkout master=0A=
+git checkout -b cleaned_up_branch=0A=
+git merge --squash private_feature_branch=0A=
+git reset</CODE></PRE></FIGURE>
+<P>I now have a working directory full of my changes and none of the =
+baggage=20
+from the previous branch. Now I manually add and commit my changes.</P>
+<H2 id=3D"summary">Summary</H2>
+<P>If you=E2=80=99re fighting Git=E2=80=99s defaults, ask why.</P>
+<P>Treat public history as immutable, atomic, and easy to follow. Treat =
+private=20
+history as disposable and malleable.</P>
+<P>The intended workflow is:</P>
+<OL>
+  <LI>Create a private branch off a public branch.</LI>
+  <LI>Regularly commit your work to this private branch.</LI>
+  <LI>Once your code is perfect, clean up its history.</LI>
+  <LI>Merge the cleaned-up branch back into the public branch.</LI></OL>
+<P><EM>Special thanks to @<A =
+href=3D"http://twitter.com/joshaber">joshaber</A> and=20
+@<A href=3D"http://twitter.com/jbarnette">jbarnette</A> for providing =
+feedback on=20
+an early draft.</EM></P></DIV>
+<DIV class=3D"signature content">
+<DIV class=3D"photo-cell"><IMG class=3D"headshot" =
+src=3D"https://sandofsky.com/images/headshot_1x.jpg"=20
+srcset=3D"/images/headshot_1x.jpg 1x, /images/headshot_2x.jpg 2x, =
+/images/headshot_3x.jpg 3x"></DIV>
+<DIV class=3D"bio-cell">
+<P>I'm Ben Sandofsky. I build iOS apps, advise mobile startups, and =
+teach with=20
+<A href=3D"https://codepath.com/">CodePath</A>. Read more details on the =
+<A href=3D"https://sandofsky.com/projects.html">projects=20
+page.</A> Follow me on Twitter at&nbsp;<A=20
+href=3D"http://twitter.com/sandofsky"><SPAN=20
+class=3D"twitter-at">@</SPAN>sandofsky</A>.</P></DIV></DIV></DIV></DIV>
+<DIV class=3D"page-footer">
+<DIV class=3D"footer-content">
+<DIV class=3D"page-footer-column">
+<DIV class=3D"around-the-web">
+<H2>Around the Web</H2>
+<UL class=3D"social">
+  <LI><A href=3D"mailto:ben@sandofsky.com"><SPAN =
+class=3D"icon-font">=EE=A0=84</SPAN>=20
+  Email</A></LI>
+  <LI><A href=3D"https://twitter.com/sandofsky"><SPAN =
+class=3D"icon-font">=EE=A0=82</SPAN>=20
+  Twitter</A></LI>
+  <LI><A href=3D"https://sandofsky.com/blog/git-workflow.html#"><A =
+href=3D"http://feeds2.feedburner.com/SandofskyBlogEntries"><SPAN=20
+  class=3D"icon-font">=EE=A0=86</SPAN> RSS</A></LI></UL>
+<UL class=3D"social">
+  <LI><A href=3D"https://sandofsky.com/blog/git-workflow.html#"><A =
+href=3D"https://github.com/sandofsky"><SPAN=20
+  class=3D"icon-font">=EE=A0=80</SPAN> GitHub</A></LI>
+  <LI><A href=3D"https://sandofsky.com/blog/git-workflow.html#"><A =
+href=3D"https://medium.com/@sandofsky"><SPAN=20
+  class=3D"icon-font">=EE=A0=81</SPAN> Medium</A></LI>
+  <LI><A href=3D"https://instagram.com/sandofsky"><SPAN =
+class=3D"icon-font">=EE=A0=83</SPAN>=20
+  Instagram</A></LI></UL></DIV></DIV>
+<DIV class=3D"page-footer-column">
+<H2>Recent Writing</H2>
+<UL class=3D"writing-preview">
+  <LI><A class=3D"title" =
+href=3D"https://sandofsky.com/blog/kvo.html">The Design=20
+  Flaws of&nbsp;KVO</A>In <A =
+href=3D"https://sandofsky.com/blog/delegates-vs-observers.html">my=20
+  last post</A>, I explained why you should prefer delegates over =
+observers. The=20
+  former encourages a <A =
+href=3D"https://twitter.com/andy_matuschak/status/694307769835388928">tre=
+e-like=20
+  data flow</A>, while latter leads to a cat=E2=80=99s cradle.  <A =
+href=3D"https://sandofsky.com/blog/kvo.html">=E2=86=92</A></LI>
+  <LI><A class=3D"title" =
+href=3D"https://sandofsky.com/blog/delegates-vs-observers.html">Delegates=
+=20
+  vs Observers</A>A well structured app consists of simple objects with=20
+  well-defined responsibilities talking to each other. When you design =
+an=20
+  object, you might think of an object=E2=80=99s properties, and the =
+actions they take,=20
+  but it=E2=80=99s just as important to decide how they=E2=80=99ll =
+communicate.  <A =
+href=3D"https://sandofsky.com/blog/delegates-vs-observers.html">=E2=86=92=
+</A></LI>
+  <LI><A class=3D"title"=20
+  href=3D"https://sandofsky.com/blog/the-s-curve.html">Agility Follows=20
+  an&nbsp;S-Curve</A>The worst question in software is, =E2=80=9CWhen =
+will it be done?=E2=80=9D=20
+  because it never correlates with, =E2=80=9CWhen should we =
+ship?=E2=80=9D  <A =
+href=3D"https://sandofsky.com/blog/the-s-curve.html">=E2=86=92</A></LI></=
+UL></DIV>
+<DIV class=3D"page-footer-column"></DIV></DIV></DIV>
+<SCRIPT type=3D"text/javascript">=0A=
+	document.getElementsByTagName("body")[0].style.visibility =3D "hidden"=0A=
+	setTimeout(function(){=0A=
+		var e =3D document.getElementsByTagName("body")[0]=0A=
+		e.style.visibility =3D "visible"=0A=
+	}, 1000)=0A=
+</SCRIPT>
+=20
+<SCRIPT>=0A=
+	WebFontConfig =3D {=0A=
+		custom: {=0A=
+		    families: ["FFTisaWeb",=0A=
+			"FFTisaWebBold",=0A=
+			"FFTisaWebItalic",=0A=
+			"FFTisaWebMediumSmallCaps",=0A=
+			"FFTisaWebSmallCaps", "Nitti", "MuseoSans-300", "MuseoSans-100", =
+"icon"],=0A=
+		    urls: =
+['/cacheforever/embedded_fonts_cae15a3f56e8e9a6b01daef14c3fe5dcb626b57f.c=
+ss', '/fonts/counters.css']=0A=
+		}=0A=
+	};=0A=
+	   (function(d) {=0A=
+	      var wf =3D d.createElement('script'), s =3D d.scripts[0];=0A=
+	      wf.src =3D '/javascripts/webfont.1.5.18.js';=0A=
+	      s.parentNode.insertBefore(wf, s);=0A=
+	   })(document);=0A=
+</SCRIPT>
+=20
+<SCRIPT>=0A=
+  =
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=3Dr;i[r]=3Di[r]||func=
+tion(){=0A=
+  (i[r].q=3Di[r].q||[]).push(arguments)},i[r].l=3D1*new =
+Date();a=3Ds.createElement(o),=0A=
+  =
+m=3Ds.getElementsByTagName(o)[0];a.async=3D1;a.src=3Dg;m.parentNode.inser=
+tBefore(a,m)=0A=
+  =
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga=
+');=0A=
+=0A=
+  ga('create', 'UA-2226333-2', 'auto');=0A=
+  ga('require', 'linkid', 'linkid.js');=0A=
+  ga('send', 'pageview');=0A=
+=0A=
+</SCRIPT>
+   </BODY></HTML>
+
+------=_NextPart_000_0050_01D16BB6.1B3A98E0
+Content-Type: image/jpeg
+Content-Transfer-Encoding: base64
+Content-Location: https://sandofsky.com/images/headshot_1x.jpg
+
+/9j/4AAQSkZJRgABAQEASABIAAD/4QDqRXhpZgAATU0AKgAAAAgACAESAAMAAAABAAEAAAEaAAUA
+AAABAAAAbgEbAAUAAAABAAAAdgEoAAMAAAABAAIAAAExAAIAAAARAAAAfgEyAAIAAAAUAAAAkAE7
+AAIAAAATAAAApIdpAAQAAAABAAAAuAAAAAAAAABIAAAAAQAAAEgAAAABUGl4ZWxtYXRvciAzLjMu
+MgAAMjAxNTowNzowNyAxNDowNzo1NwBCZW5qYW1pbiBTYW5kb2Zza3kAAAADoAEAAwAAAAEAAQAA
+oAIABAAAAAEAAADIoAMABAAAAAEAAADIAAAAAP/hCzJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8x
+LjAvADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+
+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDUu
+NC4wIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJk
+Zi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6ZGM9Imh0
+dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9i
+ZS5jb20veGFwLzEuMC8iIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90
+b3Nob3AvMS4wLyIgeG1wOk1vZGlmeURhdGU9IjIwMTUtMDctMDdUMTQ6MDc6NTciIHhtcDpDcmVh
+dG9yVG9vbD0iUGl4ZWxtYXRvciAzLjMuMiIgcGhvdG9zaG9wOkluc3RydWN0aW9ucz0iRkJNRDAx
+MDAwYWRhMDMwMDAwODgyMzAwMDA5MzQxMDAwMDU0NDUwMDAwZWI0NzAwMDBmYjU2MDAwMGYzOGYw
+MDAwYmI5YTAwMDA1ZGExMDAwMDg2YTYwMDAwNmQxYzAxMDAiIHBob3Rvc2hvcDpUcmFuc21pc3Np
+b25SZWZlcmVuY2U9ImFndjBObllJREhqcVZVbTZZNjRTIj4gPGRjOnN1YmplY3Q+IDxyZGY6QmFn
+Lz4gPC9kYzpzdWJqZWN0PiA8ZGM6Y3JlYXRvcj4gPHJkZjpTZXE+IDxyZGY6bGk+QmVuamFtaW4g
+U2FuZG9mc2t5PC9yZGY6bGk+IDwvcmRmOlNlcT4gPC9kYzpjcmVhdG9yPiA8L3JkZjpEZXNjcmlw
+dGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICA8P3hwYWNrZXQgZW5kPSJ3Ij8+AP/tAN5QaG90b3No
+b3AgMy4wADhCSU0EBAAAAAAAphwBWgADGyVHHAIAAAIAAhwCUAASQmVuamFtaW4gU2FuZG9mc2t5
+HAIoAGJGQk1EMDEwMDBhZGEwMzAwMDA4ODIzMDAwMDkzNDEwMDAwNTQ0NTAwMDBlYjQ3MDAwMGZi
+NTYwMDAwZjM4ZjAwMDBiYjlhMDAwMDVkYTEwMDAwODZhNjAwMDA2ZDFjMDEwMBwCZwAUYWd2ME5u
+WUlESGpxVlVtNlk2NFM4QklNBCUAAAAAABDCcBlRgp4ZKYZuAT6M86VJ/+ICHElDQ19QUk9GSUxF
+AAEBAAACDGxjbXMCEAAAbW50clJHQiBYWVogB9wAAQAZAAMAKQA5YWNzcEFQUEwAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAPbWAAEAAAAA0y1sY21zAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAKZGVzYwAAAPwAAABeY3BydAAAAVwAAAALd3RwdAAAAWgAAAAU
+YmtwdAAAAXwAAAAUclhZWgAAAZAAAAAUZ1hZWgAAAaQAAAAUYlhZWgAAAbgAAAAUclRSQwAAAcwA
+AABAZ1RSQwAAAcwAAABAYlRSQwAAAcwAAABAZGVzYwAAAAAAAAADYzIAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAdGV4dAAAAABGQgAAWFlaIAAAAAAAAPbWAAEAAAAA0y1YWVogAAAAAAAAAxYAAAMz
+AAACpFhZWiAAAAAAAABvogAAOPUAAAOQWFlaIAAAAAAAAGKZAAC3hQAAGNpYWVogAAAAAAAAJKAA
+AA+EAAC2z2N1cnYAAAAAAAAAGgAAAMsByQNjBZIIawv2ED8VURs0IfEpkDIYO5JGBVF3Xe1rcHoF
+ibGafKxpv33Tw+kw////wAARCADIAMgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAEC
+AwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0Kx
+wRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1
+dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ
+2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QA
+tREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYk
+NOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaH
+iImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq
+8vP09fb3+Pn6/9sAQwABAQEBAQECAQECAwICAgMEAwMDAwQGBAQEBAQGBwYGBgYGBgcHBwcHBwcH
+CAgICAgICQkJCQkLCwsLCwsLCwsL/9sAQwECAgIDAwMFAwMFCwgGCAsLCwsLCwsLCwsLCwsLCwsL
+CwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsL/90ABAAN/9oADAMBAAIRAxEAPwD+/iii
+igAooooAKKKKACiiigAooooAKKy9Y1vRvD2nSavr93DY2kI3ST3EixRqPUsxAH41+P37R/8AwXQ/
+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
+
+------=_NextPart_000_0050_01D16BB6.1B3A98E0
+Content-Type: text/css;
+	charset="gb2312"
+Content-Transfer-Encoding: quoted-printable
+Content-Location: https://sandofsky.com/css/normalize.css
+
+html {
+	font-family: sans-serif; -ms-text-size-adjust: 100%; =
+-webkit-text-size-adjust: 100%;
+}
+body {
+	margin: 0px;
+}
+article {
+	display: block;
+}
+aside {
+	display: block;
+}
+details {
+	display: block;
+}
+figcaption {
+	display: block;
+}
+figure {
+	display: block;
+}
+footer {
+	display: block;
+}
+header {
+	display: block;
+}
+hgroup {
+	display: block;
+}
+main {
+	display: block;
+}
+menu {
+	display: block;
+}
+nav {
+	display: block;
+}
+section {
+	display: block;
+}
+summary {
+	display: block;
+}
+audio {
+	vertical-align: baseline; display: inline-block;
+}
+canvas {
+	vertical-align: baseline; display: inline-block;
+}
+progress {
+	vertical-align: baseline; display: inline-block;
+}
+video {
+	vertical-align: baseline; display: inline-block;
+}
+audio:not([controls]) {
+	height: 0px; display: none;
+}
+[hidden] {
+	display: none;
+}
+template {
+	display: none;
+}
+a {
+	background-color: transparent;
+}
+a:active {
+	outline: 0px;
+}
+a:hover {
+	outline: 0px;
+}
+abbr[title] {
+	border-bottom-color: currentColor; border-bottom-width: 1px; =
+border-bottom-style: dotted;
+}
+b {
+	font-weight: bold;
+}
+strong {
+	font-weight: bold;
+}
+dfn {
+	font-style: italic;
+}
+h1 {
+	margin: 0.67em 0px; font-size: 2em;
+}
+mark {
+	background: rgb(255, 255, 0); color: rgb(0, 0, 0);
+}
+small {
+	font-size: 80%;
+}
+sub {
+	line-height: 0; font-size: 75%; vertical-align: baseline; position: =
+relative;
+}
+sup {
+	line-height: 0; font-size: 75%; vertical-align: baseline; position: =
+relative;
+}
+sup {
+	top: -0.5em;
+}
+sub {
+	bottom: -0.25em;
+}
+img {
+	border: 0px currentColor; border-image: none;
+}
+svg:not(:root) {
+	overflow: hidden;
+}
+figure {
+	margin: 1em 40px;
+}
+hr {
+	height: 0px; box-sizing: content-box; -moz-box-sizing: content-box;
+}
+pre {
+	overflow: auto;
+}
+code {
+	font-family: monospace, monospace; font-size: 1em;
+}
+kbd {
+	font-family: monospace, monospace; font-size: 1em;
+}
+pre {
+	font-family: monospace, monospace; font-size: 1em;
+}
+samp {
+	font-family: monospace, monospace; font-size: 1em;
+}
+button {
+	font: inherit; margin: 0px; color: inherit; font-size-adjust: inherit; =
+font-stretch: inherit;
+}
+input {
+	font: inherit; margin: 0px; color: inherit; font-size-adjust: inherit; =
+font-stretch: inherit;
+}
+optgroup {
+	font: inherit; margin: 0px; color: inherit; font-size-adjust: inherit; =
+font-stretch: inherit;
+}
+select {
+	font: inherit; margin: 0px; color: inherit; font-size-adjust: inherit; =
+font-stretch: inherit;
+}
+textarea {
+	font: inherit; margin: 0px; color: inherit; font-size-adjust: inherit; =
+font-stretch: inherit;
+}
+button {
+	overflow: visible;
+}
+button {
+	text-transform: none;
+}
+select {
+	text-transform: none;
+}
+button {
+	cursor: pointer; -webkit-appearance: button;
+}
+html input[type=3D'button'] {
+	cursor: pointer; -webkit-appearance: button;
+}
+input[type=3D'reset'] {
+	cursor: pointer; -webkit-appearance: button;
+}
+input[type=3D'submit'] {
+	cursor: pointer; -webkit-appearance: button;
+}
+button[disabled] {
+	cursor: default;
+}
+html input[disabled] {
+	cursor: default;
+}
+input {
+	line-height: normal;
+}
+input[type=3D'checkbox'] {
+	padding: 0px; box-sizing: border-box;
+}
+input[type=3D'radio'] {
+	padding: 0px; box-sizing: border-box;
+}
+input[type=3D'search'] {
+	box-sizing: content-box; -moz-box-sizing: content-box; =
+-webkit-appearance: textfield; -webkit-box-sizing: content-box;
+}
+fieldset {
+	margin: 0px 2px; padding: 0.35em 0.62em 0.75em; border: 1px solid =
+rgb(192, 192, 192); border-image: none;
+}
+legend {
+	padding: 0px; border: 0px currentColor; border-image: none;
+}
+textarea {
+	overflow: auto;
+}
+optgroup {
+	font-weight: bold;
+}
+table {
+	border-collapse: collapse; border-spacing: 0;
+}
+td {
+	padding: 0px;
+}
+th {
+	padding: 0px;
+}
+
+------=_NextPart_000_0050_01D16BB6.1B3A98E0
+Content-Type: text/css;
+	charset="gb2312"
+Content-Transfer-Encoding: quoted-printable
+Content-Location: https://sandofsky.com/css/main.css
+
+@media only screen and (min-width:1080px)
+{
+nav {
+	width: 1040px;
+}
+nav a span {
+	width: 270px;
+}
+nav a span.last {
+	width: 230px;
+}
+div.writing-index {
+	width: 500px; margin-right: auto; margin-left: auto;
+}
+.home-content {
+	width: 1040px;
+}
+.home-content .column {
+	width: 1040px;
+}
+.home-content .bio-container {
+	width: 520px; float: left;
+}
+.home-content .headshot {
+	width: 200px; height: 200px; margin-right: 20px; float: left;
+}
+.home-content .biography {
+	width: 270px; float: left;
+}
+.home-content .biography p {
+	text-indent: 1.5em; margin-bottom: 0em;
+}
+.home-content .around-the-web {
+	width: 500px; clear: left; float: left;
+}
+.home-content .writing {
+	width: 500px; float: right;
+}
+:nth-of-type(1).page-footer-column {
+	width: 270px;
+}
+:nth-of-type(2).page-footer-column {
+	width: 500px; padding-right: 40px;
+}
+:nth-of-type(3).page-footer-column {
+	width: 230px;
+}
+.page-footer .footer-content {
+	width: 1040px;
+}
+ul.social {
+	width: 230px; float: left;
+}
+ul:nth-of-type(1).social {
+	margin-right: 40px;
+}
+div.blog h1 {
+	width: 810px; margin-left: 230px;
+}
+div.longform {
+	width: 1040px;
+}
+div.longform div.content {
+	width: 500px; margin-left: 270px;
+}
+figure.highlight {
+	padding-left: 12px; border-left-color: rgb(136, 136, 136); =
+border-left-width: 0.1em; border-left-style: solid;
+}
+div.wide figure.highlight {
+	width: 770px; margin-left: -120px;
+}
+}
+@media only screen and (max-width:1079px) and (min-width:768px)
+{
+nav {
+	width: 740px;
+}
+nav a.site-title span.collapseable {
+	display: none !important;
+}
+nav a span.section {
+	width: 190px;
+}
+nav a span.section.last {
+	width: 170px !important;
+}
+.home-content {
+	width: 740px;
+}
+.home-content .column {
+	width: 740px;
+}
+.home-content .biography {
+	width: 340px; clear: right; float: left;
+}
+.home-content .headshot {
+	width: 170px; height: 170px; margin-right: 20px; float: left;
+}
+.home-content .around-the-web {
+	padding: 0px !important; width: 170px; clear: right; border-top-width: =
+0px !important; float: right;
+}
+.home-content .around-the-web h2 {
+	display: none;
+}
+.home-content .writing {
+	width: 540px; padding-top: 1em; border-top-color: rgb(170, 170, 170); =
+border-top-width: 1px; border-top-style: solid; float: left;
+}
+div.writing-index {
+	width: 500px; padding-right: 64px; padding-left: 204px; margin-right: =
+auto; margin-left: auto;
+}
+.page-footer .footer-content {
+	width: 740px;
+}
+.page-footer-column h2 {
+	font-size: 1.2em !important;
+}
+:nth-of-type(1).page-footer-column {
+	width: 190px;
+}
+:nth-of-type(2).page-footer-column {
+	width: 500px;
+}
+:nth-of-type(3).page-footer-column {
+	width: 50px;
+}
+ul.social {
+	width: 170px;
+}
+div.blog h1 {
+	font-size: 3.37em !important; margin-left: 190px;
+}
+div.longform {
+	width: 740px;
+}
+div.longform div.content {
+	width: 500px; margin-left: 190px;
+}
+div.wide figure.highlight {
+	width: 650px; margin-left: -120px !important;
+}
+figure.highlight {
+	padding-left: 1em;
+}
+}
+@media only screen and (max-width:767px) and (min-width:540px)
+{
+nav {
+	width: 520px; font-size: 0.8em;
+}
+nav a.site-title span.section {
+	width: 160px !important;
+}
+nav a.site-title span.collapseable {
+	display: none !important;
+}
+nav a span.section {
+	width: 120px;
+}
+.home-content {
+	width: 520px;
+}
+.home-content .column {
+	width: 520px;
+}
+.home-content .biography {
+	width: 360px; clear: right; float: right;
+}
+.home-content .headshot {
+	width: 130px; height: 130px; float: left;
+}
+.home-content .around-the-web {
+	padding: 0px !important; width: 130px; clear: left; border-top-width: =
+0px !important; float: left;
+}
+.home-content .around-the-web h2 {
+	display: none;
+}
+.home-content .writing {
+	width: 360px; padding-top: 1em; border-top-color: rgb(170, 170, 170); =
+border-top-width: 1px; border-top-style: solid; float: right;
+}
+div.writing-index {
+	width: 520px; margin-right: auto; margin-left: auto;
+}
+.page-footer .footer-content {
+	width: 520px;
+}
+.page-footer-column h2 {
+	font-size: 1.2em !important;
+}
+:nth-of-type(1).page-footer-column {
+	width: 130px;
+}
+:nth-of-type(2).page-footer-column {
+	width: 360px;
+}
+:nth-of-type(3).page-footer-column {
+	width: 0px;
+}
+.page-footer-column .around-the-web h2 {
+	display: none;
+}
+ul.social {
+	width: 130px;
+}
+div.blog h1 {
+	width: 520px; font-size: 3.37em !important; margin-right: auto; =
+margin-left: auto;
+}
+div.longform {
+	width: 520px;
+}
+div.longform div.content {
+	width: 520px; margin-left: 0px;
+}
+}
+@media only screen and (max-width:767px)
+{
+figure.highlight {
+	padding-left: 0.5em;
+}
+div.wide figure.highlight {
+	border-right-color: rgb(136, 136, 136); border-right-width: 0.1em; =
+border-right-style: dashed;
+}
+}
+@media only screen and (max-width:539px)
+{
+nav {
+	font-size: 0.7em; margin-right: 14px !important; margin-left: 14px =
+!important;
+}
+nav span.section {
+	height: 30px !important; display: inline;
+}
+nav a {
+	width: 25%; height: 30px !important; padding-top: 8px !important; =
+padding-bottom: 8px !important;
+}
+nav a.site-title span.collapseable {
+	display: none !important;
+}
+nav a.site-title span.semi-collapseable {
+	display: none !important;
+}
+.home-content {
+	width: 100%;
+}
+.home-content .column {
+	margin-right: 14px; margin-left: 14px;
+}
+.home-content .bio-title {
+	font-size: 1.5em !important;
+}
+.home-content .biography {
+	width: 100%; display: inline;
+}
+.home-content .headshot {
+	width: 80px; height: 80px; margin-right: 14px; float: left;
+}
+.around-the-web {
+	width: 100%; display: table;
+}
+ul.social {
+	width: 50%; display: table-cell;
+}
+.around-the-web h2 {
+	display: none;
+}
+.home-content .writing {
+	width: 100%; padding-top: 1em; border-top-color: rgb(170, 170, 170); =
+border-top-width: 1px; border-top-style: solid;
+}
+.page-footer {
+=09
+}
+.page-footer .footer-content {
+	padding-right: 14px; padding-left: 14px; display: table;
+}
+.page-footer .around-the-web {
+	margin-bottom: 1.5em;
+}
+.page-footer-column h2 {
+	font-size: 1.2em !important;
+}
+:nth-of-type(1).page-footer-column {
+	width: 100%; display: block;
+}
+:nth-of-type(2).page-footer-column {
+	width: 100%; display: block;
+}
+:nth-of-type(3).page-footer-column {
+	width: 0%; display: none;
+}
+.page-footer-column .around-the-web h2 {
+	display: none;
+}
+div.blog p {
+	line-height: 1.6em !important;
+}
+div.blog h1 {
+	line-height: 1.1em !important; font-size: 1.8em !important; =
+margin-left: 14px;
+}
+div.blog h2 {
+	font-size: 1.6em !important;
+}
+div.blog h3 {
+	font-size: 1.3em !important;
+}
+div.longform {
+	width: 100%;
+}
+div.longform div.content {
+	margin-right: 14px; margin-left: 14px;
+}
+div.blog ul {
+	list-style-position: inside !important;
+}
+div.blog ol {
+	list-style-position: inside !important;
+}
+figure.highlight {
+	padding-left: 1em !important;
+}
+}
+@media only screen and (max-width:400px)
+{
+nav span.section {
+	text-align: center !important;
+}
+div.photo-cell {
+	width: 100px !important; height: 100px !important; display: table-cell;
+}
+div.photo-cell .headshot {
+	width: 86px !important; height: 86px !important;
+}
+}
+@media only screen and (max-width:320px)
+{
+nav span.section {
+	font-size: 0.8em !important;
+}
+.home-content h2.bio-title {
+	font-size: 1.25em !important;
+}
+}
+p.hanging {
+	text-indent: -0.3em;
+}
+h3.hanging {
+	text-indent: -0.6em;
+}
+h1.quote {
+	text-indent: -0.45em; font-family: FFTisaWebItalic !important;
+}
+h2.quote {
+	text-indent: -0.45em; font-family: FFTisaWebItalic !important;
+}
+h3.quote {
+	text-indent: -0.45em; font-family: FFTisaWebItalic !important;
+}
+blockquote.quote {
+	color: rgb(68, 68, 68); line-height: 1.6em !important; text-indent: =
+-0.45em; font-family: FFTisaWebItalic; margin-top: 0.7em !important; =
+margin-right: 0em; margin-bottom: 1.2em; margin-left: 0em; word-spacing: =
+0.1em;
+}
+div.quote-attribution {
+	font-family: FFTisaWebItalic !important; margin-left: 2em;
+}
+a {
+	text-decoration: none;
+}
+.small-caps {
+	letter-spacing: 0.05em; font-family: FFTisaWebSmallCaps, Georgia;
+}
+body {
+	margin: 0px; padding: 0px; color: rgb(65, 65, 65); line-height: 1.5em; =
+font-family: FFTisaWeb, Georgia; -webkit-font-smoothing: antialiased;
+}
+body em {
+	font-family: FFTisaWebItalic, Georgia; font-style: normal;
+}
+body strong {
+	color: rgb(68, 68, 68); font-family: FFTisaWebBold, Georgia; =
+font-style: normal;
+}
+a {
+	color: rgb(186, 59, 22);
+}
+code {
+	font-family: Nitti;
+}
+nav {
+	font-family: MuseoSans-300, HelveticaNeue, Helvetica, Arial; =
+margin-right: auto; margin-left: auto; display: table;
+}
+nav span.section {
+	width: 270px; height: 48px; vertical-align: bottom; display: =
+table-cell;
+}
+nav a.site-title span {
+	color: rgb(186, 59, 22); font-family: MuseoSans-100, =
+"HelveticaNeue-Light", Helvetica, Arial; font-size: 1em;
+}
+nav a.site-title span.collapseable {
+	display: inline;
+}
+nav span.section {
+	text-transform: uppercase;
+}
+nav a {
+	text-align: left; color: rgb(219, 84, 45); padding-bottom: 14px; =
+font-size: 1.3em; text-decoration: none; vertical-align: middle; =
+border-bottom-color: rgb(170, 170, 170); border-bottom-width: 1px; =
+border-bottom-style: solid; display: inline-block;
+}
+div.writing-index ul {
+	list-style: none;
+}
+div.writing-index ul li a.title {
+	font-feature-settings: "smcp" 1; -moz-font-feature-settings: =
+"smcp=3D1"; -webkit-font-feature-settings: "smcp"; =
+-o-font-feature-settings: "smcp";
+}
+.home-content {
+	margin-right: auto; margin-left: auto;
+}
+.home-content .column {
+	margin-top: 1.2em;
+}
+.home-content p {
+	margin-top: 0em; margin-bottom: 0.8em;
+}
+ul.writing-preview {
+	list-style: none; margin: 0px; padding-left: 0px;
+}
+.longform ul.writing-preview {
+	margin-top: 1.5em;
+}
+ul.writing-preview li {
+	margin-bottom: 1.5em;
+}
+ul.writing-preview li .title {
+	line-height: 1.4em; font-family: FFTisaWebMediumSmallCaps, Georgia; =
+margin-bottom: 0.12em; display: block;
+}
+.home-content h2 {
+	padding: 0px; color: rgb(51, 51, 51); line-height: 1em; font-family: =
+FFTisaWeb, Georgia; font-size: 1.5em; margin-top: 0.3em; margin-bottom: =
+0.5em;
+}
+.home-content h2.bio-title {
+	color: rgb(56, 56, 56); line-height: 1em; font-family: FFTisaWebMedium, =
+Georgia; font-size: 2.25em; margin-top: 0em; margin-bottom: 0.2em;
+}
+ul.social {
+	list-style: none; margin: 0px; padding: 0px;
+}
+ul.social a {
+	line-height: 1.4em; letter-spacing: 0.05em; font-family: =
+FFTisaWebSmallCaps, Georgia; font-size: 1.1em;
+}
+ul.social li {
+	margin-bottom: 0.3em;
+}
+.home-content .biography {
+	margin-bottom: 0.2em;
+}
+.home-content .headshot {
+	border: 1px solid rgb(170, 170, 170); border-image: none; margin-top: =
+0.3em; margin-bottom: 1.5em;
+}
+.home-content .around-the-web {
+	padding-top: 1.3em; margin-bottom: 0.66em; border-top-color: rgb(170, =
+170, 170); border-top-width: 1px; border-top-style: solid;
+}
+.home-content .around-the-web h2 {
+	margin-top: 0em; margin-bottom: 0.4em;
+}
+.icon-font {
+	font-family: icon; font-size: 0.9em; margin-right: 1px;
+}
+div.writing-index {
+	margin-top: 1em;
+}
+.writing-index .intro {
+	line-height: 1.4em; font-family: FFTisaWeb, Georgia; font-size: 1.5em;
+}
+.writing-index ul {
+	padding: 0px;
+}
+sup {
+	font-family: FFTisaWebMedium, Georgia;
+}
+.page-footer {
+	width: 100%; padding-top: 1em; padding-bottom: 1em; margin-top: 1.3em; =
+border-top-color: rgb(238, 238, 238); border-top-width: 1px; =
+border-top-style: solid; background-color: rgb(248, 248, 248);
+}
+.page-footer .footer-content {
+	margin-right: auto; margin-left: auto; display: table;
+}
+.page-footer h2 {
+	font-size: 1.5em; margin-top: 0.4em; margin-bottom: 0.5em;
+}
+.page-footer-column {
+	display: table-cell;
+}
+.page-footer .around-the-web {
+	width: 100%;
+}
+.page-footer ul.social a {
+	font-size: 1em;
+}
+.page-footer ul.social li {
+	margin-bottom: 0em;
+}
+div.longform {
+	margin-right: auto; margin-left: auto;
+}
+ul.projects {
+	list-style: none; padding-left: 0px;
+}
+ul.projects li p {
+	margin-top: 0em; margin-bottom: 1.5em;
+}
+ul.projects li h1 {
+	color: rgb(68, 68, 68); line-height: 1.2em; font-family: =
+FFTisaWebMedium, Georgia; font-size: 2.25em; margin-bottom: 0.2em;
+}
+div.blog div.content p {
+	margin-top: 0em; margin-bottom: 1.5em;
+}
+div.blog div.content svg {
+=09
+}
+div.blog h1 {
+	color: rgb(68, 68, 68); line-height: 1em; letter-spacing: -0.06em; =
+font-family: FFTisaWebMediumSmallCaps, Georgia; font-size: 5em; =
+margin-top: 0.6em; margin-bottom: 0.4em; word-spacing: 0.1em;
+}
+div.blog h2 {
+	color: rgb(68, 68, 68); line-height: 1.2em; letter-spacing: -0.03em; =
+font-family: FFTisaWebBold, Georgia; font-size: 3.37em; margin-top: =
+0.45em; margin-bottom: 0.25em;
+}
+div.blog h3 {
+	color: rgb(68, 68, 68); line-height: 1.2em; letter-spacing: -0.04em; =
+font-family: FFTisaWebMedium, Georgia; font-size: 2.2em; margin-top: =
+0.45em; margin-bottom: 0.25em;
+}
+div.blog ul {
+	padding-left: 0em; margin-top: 0em; list-style-position: outside;
+}
+div.blog ol {
+	padding-left: 0em; margin-top: 0em; list-style-position: outside;
+}
+figure.highlight {
+	margin: 2em 0em; padding-top: 0.5em; padding-bottom: 0.5em; =
+border-left-color: rgb(136, 136, 136); border-left-width: 0.1em; =
+border-left-style: solid; background-color: rgb(250, 250, 250);
+}
+div.footnotes {
+	padding-top: 1em; font-size: 0.85em; border-top-color: rgb(85, 85, 85); =
+border-top-width: 1px; border-top-style: dotted;
+}
+div.signature {
+	padding-top: 1.5em; border-top-color: rgb(187, 187, 187); =
+border-top-width: 1px; border-top-style: solid; display: table;
+}
+div.photo-cell {
+	width: 120px; height: 120px; display: table-cell;
+}
+div.photo-cell .headshot {
+	border: 1px solid rgb(187, 187, 187); border-image: none; width: 100px; =
+height: 100px; padding-top: 0px;
+}
+div.signature div.bio-cell {
+	font-family: FFTisaWebItalic; vertical-align: top; display: table-cell;
+}
+div.signature div.bio-cell p {
+	margin-bottom: 0em;
+}
+a .twitter-at {
+	color: rgb(212, 136, 114);
+}
+.read-more {
+	text-align: right; letter-spacing: 0.05em; font-family: =
+FFTisaWebItalic; font-size: 1em;
+}
+svg text {
+	font-family: FFTisaWebItalic; fill: #414141;
+}
+svg text.caption {
+	font-family: FFTisaWebItalic; fill: #414141;
+}
+svg rect.border {
+	stroke: #555; stroke-width: 2;
+}
+svg.chart path.primary-line {
+	stroke: #27568f; stroke-width: 2;
+}
+svg.chart path.real-line {
+	stroke: #db4242; stroke-width: 2;
+}
+svg.chart path.grid-line {
+	stroke: #f3f3f3; stroke-width: 1;
+}
+pre {
+	margin: 0px; padding: 0px;
+}
+
+------=_NextPart_000_0050_01D16BB6.1B3A98E0
+Content-Type: text/css;
+	charset="gb2312"
+Content-Transfer-Encoding: 7bit
+Content-Location: https://sandofsky.com/css/code.css
+
+.language-swift .k {
+	color: rgb(0, 0, 255);
+}
+.language-swift .kr {
+	color: rgb(0, 0, 255);
+}
+.language-swift .kt {
+	color: rgb(0, 0, 255);
+}
+.language-swift .nb {
+	color: rgb(0, 0, 255);
+}
+.language-swift .s {
+	color: rgb(163, 21, 21);
+}
+.language-swift .bp {
+	color: rgb(43, 131, 159);
+}
+.language-swift .n {
+	color: rgb(43, 131, 159);
+}
+.language-swift .c1 {
+	color: rgb(0, 128, 0);
+}
+
+------=_NextPart_000_0050_01D16BB6.1B3A98E0--
